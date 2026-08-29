@@ -43,10 +43,12 @@ def gh_get(path, access_token):
 
 
 def build_filter(d):
+    # Google Health API v4: sample filter prefix uses snake_case (heart_rate), NOT kebab-case
+    fp = "heart_rate"
     tomorrow = (d + timedelta(days=1)).strftime("%Y-%m-%d")
     return (
-        f'heart-rate.sample_time.civil_time >= "{d.strftime("%Y-%m-%d")}" '
-        f'AND heart-rate.sample_time.civil_time < "{tomorrow}"'
+        f'{fp}.sample_time.civil_time >= "{d.strftime("%Y-%m-%d")}" '
+        f'AND {fp}.sample_time.civil_time < "{tomorrow}"'
     )
 
 
