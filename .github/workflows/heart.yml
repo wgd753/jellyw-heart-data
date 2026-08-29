@@ -1,0 +1,48 @@
+name: Fetch Heart Rate
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: heart-fetch
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Shanghai
+      GH_CLIENT_ID: ${{ secrets.GH_CLIENT_ID }}
+      GH_CLIENT_SECRET: ${{ secrets.GH_CLIENT_SECRET }}
+      GH_REFRESH_TOKEN: ${{ secrets.GH_REFRESH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Fetch latest heart rate
+        run: python fetch_heart.py
+
+      - name: Commit and push
+        run: |
+          git config user.name "jellyw-heart-bot"
+          git config user.email "actions@github.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add heart.json
+            git commit -m "heart: $(date '+%Y-%m-%d %H:%M %Z')"
+            git push
+          else
+            echo "no change"
+          fi
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Heart fetch failed — likely Google refresh token expired. Run the OAuth re-auth flow and update GH_REFRESH_TOKEN secret."
